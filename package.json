@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "preview:static": "npx --yes serve dist/client -l 8080",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "amplify:sync-yml": "node scripts/sync-amplify-yml.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
