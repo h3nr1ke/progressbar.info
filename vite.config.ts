@@ -7,10 +7,13 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Não gera bundle Worker/Wrangler: deploy é somente a pasta do cliente (HTML/JS/CSS estáticos).
+  cloudflare: false,
   vite: {
     plugins: [],
   },
   tanstackStart: {
+    // Pré-render de `/` → `dist/client/index.html` (sem depender de SPA shell / rotas no servidor).
     prerender: {
       enabled: true,
       crawlLinks: true,
