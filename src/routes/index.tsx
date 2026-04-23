@@ -2,26 +2,65 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check, Copy, Github, Zap, FileCode, Heart, GitPullRequest } from "lucide-react";
 
+import { PublicAssetCatalog } from "@/components/PublicAssetCatalog";
+import { LARGE_LABEL_IMAGE_PX } from "@/lib/bar-image-meta";
+import { BASE } from "@/lib/public-site";
+
 export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const BASE = "https://progressbar.info";
+const GITHUB_REPO = "https://github.com/h3nr1ke/progressbar.info";
+const BAR_PATH = "large/label" as const;
 
-function ProgressBar({ value }: { value: number }) {
-  const v = Math.max(0, Math.min(100, value));
+const defaultLargeLabelDims = LARGE_LABEL_IMAGE_PX;
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+/** Ficheiro servido a partir de `public/large/label/{0–100}.png` (dev: `/large/label/56.png`). */
+function barPngSrc(value: number) {
+  const v = clampPercent(value);
+  const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+  return `${base}${BAR_PATH}/${v}.png`;
+}
+
+/** Público, sem extensão — barra larga com segmento de estilo `label/`. */
+function publicUrlLargeWithLabel(n: number) {
+  return `${BASE}/large/label/${clampPercent(n)}`;
+}
+
+/** Larga, sem segmento `label/` (só `large/…`). */
+function publicUrlLargeNoLabel(n: number) {
+  return `${BASE}/large/${clampPercent(n)}`;
+}
+
+/**
+ * Versão pequena: o mesmo padrão que “large/…”, mas **sem** o prefixo `large/`.
+ * Com estilo: `…/label/{0–100}`.
+ */
+function publicUrlSmallWithLabel(n: number) {
+  return `${BASE}/label/${clampPercent(n)}`;
+}
+
+/** Pequena, mínima: só o número no path. */
+function publicUrlSmallPlain(n: number) {
+  return `${BASE}/${clampPercent(n)}`;
+}
+
+function BarImage({ value, loading }: { value: number; loading?: "eager" | "lazy" }) {
+  const v = clampPercent(value);
   return (
-    <svg viewBox="0 0 400 60" className="w-full h-auto" role="img" aria-label={`${v}% progress`}>
-      <rect x="1" y="1" width="398" height="58" rx="8" fill="oklch(0.13 0.015 250)" stroke="oklch(0.3 0.02 250)" strokeWidth="2" />
-      <rect x="6" y="6" width={(388 * v) / 100} height="48" rx="5" fill="url(#g)" />
-      <defs>
-        <linearGradient id="g" x1="0" x2="1">
-          <stop offset="0%" stopColor="oklch(0.82 0.18 145)" />
-          <stop offset="100%" stopColor="oklch(0.75 0.16 200)" />
-        </linearGradient>
-      </defs>
-      <text x="200" y="36" textAnchor="middle" fill="oklch(0.96 0.005 240)" fontSize="20" fontWeight="600" fontFamily="ui-monospace, monospace">{v}%</text>
-    </svg>
+    <img
+      src={barPngSrc(v)}
+      width={defaultLargeLabelDims.width}
+      height={defaultLargeLabelDims.height}
+      className="w-full h-auto block"
+      alt={`${v}% complete`}
+      loading={loading}
+      decoding="async"
+    />
   );
 }
 
@@ -60,7 +99,12 @@ function Index() {
               <div className="w-6 h-6 rounded" style={{ background: "var(--gradient-hero)" }} />
               progressbar.info
             </div>
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href={GITHUB_REPO}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
               <Github className="w-4 h-4" /> GitHub
             </a>
           </div>
@@ -85,12 +129,14 @@ function Index() {
           <div className="max-w-2xl mx-auto p-6 rounded-2xl border border-border bg-card" style={{ boxShadow: "var(--shadow-glow)" }}>
             <div className="flex items-center justify-between mb-3 text-xs font-mono text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-primary" /> static .png
+                <span className="w-2 h-2 rounded-full bg-primary" /> static image
               </span>
-              <span>{value}.png</span>
+              <span>
+                {BAR_PATH}/{value}
+              </span>
             </div>
             <div className="rounded-lg overflow-hidden border border-border bg-[var(--code-bg)] p-4">
-              <ProgressBar value={value} />
+              <BarImage value={value} loading="eager" />
             </div>
             <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
               <span className="text-xs text-muted-foreground mr-1 font-mono">preview:</span>
@@ -109,23 +155,44 @@ function Index() {
               ))}
             </div>
             <div className="mt-4 font-mono text-sm text-muted-foreground break-all text-center">
-              {BASE}/<span className="text-primary">{value}</span>
+              {publicUrlLargeWithLabel(value)}
             </div>
           </div>
         </section>
 
         {/* How it works */}
         <section className="max-w-6xl mx-auto px-6 py-20">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold mb-3">How it works</h2>
             <p className="text-muted-foreground">Append a number from 0 to 100. Get a static PNG.</p>
+            <p className="text-muted-foreground text-sm max-w-3xl mx-auto mt-4 text-left sm:text-center">
+              The default, wide image uses a <code className="font-mono text-foreground/90">large/</code> path prefix. For
+              the <span className="text-foreground font-medium">smaller (compact) bar</span>, keep the same pattern but{" "}
+              <strong>remove the</strong> <code className="font-mono text-foreground/90">large</code> segment. The
+              optional{" "}
+              <code className="font-mono text-foreground/90">label</code> segment names a visual style; you can drop it
+              in both the wide and compact cases.
+            </p>
           </div>
 
+          <div className="max-w-4xl mx-auto mb-12">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground font-mono mb-3">URL patterns (same 56% example)</p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <CopyBlock label="Large + label segment" code={publicUrlLargeWithLabel(56)} />
+              <CopyBlock label="Large, no label segment" code={publicUrlLargeNoLabel(56)} />
+              <CopyBlock label="Compact + label segment" code={publicUrlSmallWithLabel(56)} />
+              <CopyBlock label="Compact, no label segment" code={publicUrlSmallPlain(56)} />
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-muted-foreground font-mono mb-6">Preview (large + label style)</p>
           <div className="grid md:grid-cols-3 gap-4">
             {[10, 56, 92].map((v) => (
               <div key={v} className="p-5 rounded-xl border border-border bg-card">
-                <ProgressBar value={v} />
-                <div className="mt-4 font-mono text-xs text-muted-foreground break-all">{BASE}/{v}</div>
+                <BarImage value={v} loading="lazy" />
+                <div className="mt-4 font-mono text-xs text-muted-foreground break-all">
+                  {publicUrlLargeWithLabel(v)}
+                </div>
               </div>
             ))}
           </div>
@@ -143,30 +210,50 @@ function Index() {
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <FileCode className="w-4 h-4 text-primary" /> Markdown / README
               </div>
-              <CopyBlock code={`![progress](${BASE}/56)`} />
+              <CopyBlock code={`![progress](${publicUrlLargeWithLabel(56)})`} />
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <FileCode className="w-4 h-4 text-primary" /> HTML
               </div>
-              <CopyBlock code={`<img src="${BASE}/56" alt="56% complete" />`} />
+              <CopyBlock code={`<img src="${publicUrlLargeWithLabel(56)}" alt="56% complete" />`} />
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <FileCode className="w-4 h-4 text-primary" /> GitHub Pages
               </div>
-              <CopyBlock code={`<img src="${BASE}/75" />`} />
+              <CopyBlock code={`<img src="${publicUrlLargeWithLabel(75)}" />`} />
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <FileCode className="w-4 h-4 text-primary" /> Reference URL
+                <FileCode className="w-4 h-4 text-primary" /> Reference (all shapes)
               </div>
-              <CopyBlock code={`${BASE}/{0-100}`} />
+              <CopyBlock
+                code={`# large
+${BASE}/large/label/{0-100}
+${BASE}/large/{0-100}
+# small (remove large/)
+${BASE}/label/{0-100}
+${BASE}/{0-100}`}
+              />
             </div>
           </div>
+        </section>
+
+        {/* On-disk options from public/ */}
+        <section className="max-w-6xl mx-auto px-6 py-20 border-t border-border">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">Examples for every link type</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+              Each way of building a link (wide or small, with or without extra path pieces) is shown below. We use four
+              sample values — 0%, 10%, 50%, and 100% — so you can see the idea without a long list. In real use you can
+              pick any whole number from 0 to 100; the size column is the image size in pixels for that style.
+            </p>
+          </div>
+          <PublicAssetCatalog />
         </section>
 
         {/* Features */}
@@ -195,8 +282,9 @@ function Index() {
             New progress bar designs are added by the community. Open a pull request with your model and image generator — that's it.
           </p>
           <a
-            href="https://github.com"
-            target="_blank" rel="noreferrer"
+            href={GITHUB_REPO}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-transform hover:scale-105"
             style={{ background: "var(--gradient-hero)", color: "oklch(0.18 0.02 250)" }}
           >
