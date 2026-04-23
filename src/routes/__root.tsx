@@ -29,10 +29,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ProgressBar.info — Simple progress bar PNGs for any markdown or webpage" },
+      { title: "progressbar.info — Simple progress bar PNGs for any markdown or webpage" },
       { name: "description", content: "Embed progress bar images anywhere with a single URL. No scripts, no setup. Free and open source." },
-      { name: "author", content: "ProgressBar.info" },
-      { property: "og:title", content: "ProgressBar.info — Progress bar PNGs via URL" },
+      { name: "author", content: "progressbar.info" },
+      { property: "og:title", content: "progressbar.info — Progress bar PNGs via URL" },
       { property: "og:description", content: "Drop a progress bar into any README, GitHub Page, or markdown file with one URL." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
